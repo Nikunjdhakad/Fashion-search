@@ -18,8 +18,14 @@ const updateProfile = async (req, res) => {
     if (stylePreference) user.stylePreference = stylePreference;
     if (fitPreference) user.fitPreference = fitPreference;
 
-    // If password is provided and different, it will be hashed by the pre-save hook
-    if (password && password.length >= 8) {
+    // If password is provided, validate strength and update (will be hashed by pre-save hook)
+    if (password) {
+      if (password.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+      if (!/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+        return res.status(400).json({ message: "Password must contain at least one number or special character" });
+      }
       user.password = password;
     }
 

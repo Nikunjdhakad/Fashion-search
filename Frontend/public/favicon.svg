@@ -1,19 +1,44 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="512" height="512" rx="128" fill="#0A0A0B"/>
-  <rect width="512" height="512" rx="128" fill="url(#glow)"/>
-  
-  <path d="M256 70 L295 217 L442 256 L295 295 L256 442 L217 295 L70 256 L217 217 Z" fill="url(#starGrad)"/>
-  <path d="M256 160 L275 237 L352 256 L275 275 L256 352 L237 275 L160 256 L237 237 Z" fill="white"/>
-
   <defs>
-    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5" gradientUnits="userSpaceOnUse" gradientTransform="translate(256 256) scale(512)">
-      <stop offset="0%" stop-color="#8B5CF6" stop-opacity="0.5"/>
-      <stop offset="100%" stop-color="#0A0A0B" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="starGrad" x1="70" y1="70" x2="442" y2="442" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#F472B6"/>
-      <stop offset="50%" stop-color="#A855F7"/>
-      <stop offset="100%" stop-color="#3B82F6"/>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#312e81"/>
+      <stop offset="100%" stop-color="#1e1b4b"/>
+    </linearGradient>
+    <linearGradient id="letterGrad" x1="80" y1="96" x2="432" y2="416" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#c4b5fd"/>
+      <stop offset="40%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="380" y1="56" x2="440" y2="140" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f0abfc"/>
+      <stop offset="100%" stop-color="#e879f9"/>
     </linearGradient>
   </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)"/>
+
+  <!-- Subtle inner border -->
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="none" stroke="white" stroke-opacity="0.06" stroke-width="4"/>
+
+  <!-- "D" letter -->
+  <path
+    d="M112 112 L112 400 L192 400 C304 400 352 336 352 256 C352 176 304 112 192 112 Z"
+    fill="none"
+    stroke="url(#letterGrad)"
+    stroke-width="28"
+    stroke-linejoin="round"
+    stroke-linecap="round"
+  />
+
+  <!-- "F" letter — vertical stem -->
+  <line x1="272" y1="112" x2="272" y2="400" stroke="url(#letterGrad)" stroke-width="28" stroke-linecap="round"/>
+  <!-- "F" — top bar -->
+  <line x1="272" y1="112" x2="416" y2="112" stroke="url(#letterGrad)" stroke-width="28" stroke-linecap="round"/>
+  <!-- "F" — middle bar -->
+  <line x1="272" y1="256" x2="384" y2="256" stroke="url(#letterGrad)" stroke-width="28" stroke-linecap="round"/>
+
+  <!-- Diamond sparkle accent -->
+  <path d="M424 64 L440 96 L424 128 L408 96 Z" fill="url(#accentGrad)"/>
+  <circle cx="424" cy="96" r="12" fill="white" opacity="0.9"/>
 </svg>

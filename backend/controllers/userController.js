@@ -13,6 +13,14 @@ const createUser = async (req, res) => {
   try {
     const { username, mobileNo, password, email, name } = req.body;
 
+    // Validate password strength
+    if (!password || password.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters" });
+    }
+    if (!/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+      return res.status(400).json({ message: "Password must contain at least one number or special character" });
+    }
+
     // Check if user exists
     const userExists = await User.findOne({ mobileNo });
     if (userExists) {

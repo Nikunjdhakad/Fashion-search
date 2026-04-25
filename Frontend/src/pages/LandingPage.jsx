@@ -1,5 +1,6 @@
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowRight, Sparkles, Upload, Search, ShoppingBag, Camera, Star, Zap, Shield, ChevronDown, Eye, Heart } from "lucide-react";
+import { ArrowRight, Sparkles, Upload, Search, ShoppingBag, Camera, Star, Zap, Shield, ChevronDown, Eye, Heart, Shirt } from "lucide-react";
+import Logo from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useAppContext } from "@/context/AppContext";
@@ -143,7 +144,7 @@ export default function LandingPage() {
                 animate={{ rotate: [0, 15, -15, 0] }}
                 transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
               >
-                <Sparkles className="h-4 w-4" />
+                <Shirt className="h-4 w-4" />
               </motion.div>
               AI-Powered Fashion Search
             </motion.div>
@@ -421,9 +422,9 @@ export default function LandingPage() {
             <div className="relative z-10 space-y-7">
               <motion.div
                 whileHover={{ scale: 1.1, rotate: 5 }}
-                className="h-16 w-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto shadow-xl shadow-indigo-500/25"
+                className="mx-auto shadow-xl shadow-indigo-500/25"
               >
-                <Sparkles className="h-8 w-8 text-white" />
+                <Logo className="h-16 w-16" />
               </motion.div>
 
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight">

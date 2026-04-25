@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Sparkles, LayoutDashboard, Upload, Heart, User, Menu, X, LogOut, ExternalLink, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Logo from "@/components/Logo";
 import { useState } from "react";
 import { useAppContext } from "@/context/AppContext";
 
@@ -36,9 +37,7 @@ export default function AppLayout() {
       <nav className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 transition-all duration-300">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 group" onClick={closeMobile}>
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center group-hover:scale-105 transition-transform">
-              <Sparkles className="h-4 w-4 text-primary-foreground" />
-            </div>
+            <Logo className="h-8 w-8 group-hover:scale-105 transition-transform" />
             <span className="font-bold text-xl tracking-tight">Deep Fashion</span>
           </Link>
 
@@ -212,9 +211,7 @@ export default function AppLayout() {
             {/* Brand */}
             <div className="col-span-2 md:col-span-1">
               <Link to="/" className="flex items-center gap-2 mb-3">
-                <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
-                  <Sparkles className="h-3.5 w-3.5 text-primary-foreground" />
-                </div>
+                <Logo className="h-7 w-7" />
                 <span className="font-bold text-lg tracking-tight">Deep Fashion</span>
               </Link>
               <p className="text-sm text-muted-foreground leading-relaxed">

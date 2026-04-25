@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 const formSchema = z.object({
   username: z.string().optional(),
   mobileNo: z.string().min(10, { message: "Invalid mobile number" }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters" }).regex(/[0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, { message: "Password must contain at least one number or special character" }),
 });
 
 export default function LoginPage({ isSignup = false }) {
@@ -166,7 +166,7 @@ export default function LoginPage({ isSignup = false }) {
                 <FormControl>
                   <Input type="password" placeholder="••••••••" {...field} className="bg-background/50 h-11 rounded-xl" />
                 </FormControl>
-                {isSignup && <FormDescription>Minimum 6 characters required.</FormDescription>}
+                {isSignup && <FormDescription>Minimum 6 characters with at least one number or special character.</FormDescription>}
                 <FormMessage />
               </FormItem>
             )} />
