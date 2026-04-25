@@ -62,6 +62,18 @@ app.get("/", (req, res) => {
   res.send("API is running...");
 });
 
+// Global error handler — catches multer & other unhandled errors as JSON
+app.use((err, req, res, next) => {
+  if (err.code === "LIMIT_FILE_SIZE") {
+    return res.status(413).json({ message: "File too large. Maximum size is 10MB." });
+  }
+  if (err.message?.includes("Invalid file type")) {
+    return res.status(400).json({ message: err.message });
+  }
+  console.error("Unhandled Error:", err.message);
+  res.status(500).json({ message: err.message || "Internal server error" });
+});
+
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {

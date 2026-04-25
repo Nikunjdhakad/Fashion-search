@@ -137,9 +137,31 @@ const visualSearch = async (req, res) => {
       matches: formattedMatches,
     });
   } catch (error) {
-    console.error("Search Error:", error.response?.data || error.message);
+    console.error("Search Error Details:", {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      stack: error.stack,
+    });
+
+    // Provide specific error messages based on the failure type
+    let userMessage = "Visual Search failed.";
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      userMessage = "Visual Search failed. API key is invalid or expired.";
+    } else if (error.response?.status === 429) {
+      userMessage = "API rate limit exceeded. Please try again in a few minutes.";
+    } else if (error.message?.includes("timeout") || error.code === "ECONNABORTED") {
+      userMessage = "Search timed out. Please try again with a smaller image.";
+    } else if (error.message?.includes("Cloudinary") || error.message?.includes("upload")) {
+      userMessage = "Image upload failed. Please try a different image.";
+    } else if (error.message?.includes("SERPAPI") || error.message?.includes("serpapi")) {
+      userMessage = "Search service temporarily unavailable. Please try again.";
+    } else {
+      userMessage = `Visual Search failed: ${error.message}`;
+    }
+
     res.status(500).json({
-      message: "Visual Search failed. Ensure API keys are valid.",
+      message: userMessage,
       error: error.message,
     });
   }
