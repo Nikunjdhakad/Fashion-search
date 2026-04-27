@@ -57,6 +57,7 @@ app.use("/api/activity", require("./routes/activityRoutes"));
 app.use("/api/favorites", require("./routes/favoritesRoutes"));
 app.use("/api/history", require("./routes/historyRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
+app.use("/api/compare", require("./routes/priceCompareRoutes"));
 
 // Test route
 app.get("/", (req, res) => {

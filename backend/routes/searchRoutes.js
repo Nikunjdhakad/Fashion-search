@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const { protect, optionalAuth } = require("../middleware/authMiddleware");
-const { visualSearch, comparePrice } = require("../controllers/searchController");
+const { visualSearch } = require("../controllers/searchController");
 const { generateTryOn } = require("../controllers/tryonController");
 
 // Multer config with file validation
@@ -31,7 +31,5 @@ router.post("/visual", optionalAuth, upload.single("image"), visualSearch);
 // Define Try-on endpoint (JSON body instead of multer stream)
 router.post("/try-on", protect, generateTryOn);
 
-// Define Price Comparison endpoint
-router.post("/compare", optionalAuth, comparePrice);
 
 module.exports = router;
