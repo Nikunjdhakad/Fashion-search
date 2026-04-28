@@ -98,8 +98,8 @@ export default function FavoritesPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)]">
       {/* Header */}
-      <div className="border-b border-border/30 bg-card/20 backdrop-blur-xl sticky top-16 z-30">
-        <div className="container mx-auto px-4 py-5 max-w-6xl">
+      <div className="border-b border-border/30 bg-background/80 backdrop-blur-xl">
+        <div className="container mx-auto px-4 py-4 max-w-6xl">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -126,7 +126,7 @@ export default function FavoritesPage() {
       </div>
 
       {/* Grid */}
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto px-4 pt-8 pb-10 max-w-6xl">
         <motion.div
           variants={stagger}
           initial="hidden"

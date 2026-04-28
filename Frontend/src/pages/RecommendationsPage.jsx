@@ -125,8 +125,8 @@ export default function RecommendationsPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)]">
       {/* ── Header ── */}
-      <div className="border-b border-border/30 bg-card/20 backdrop-blur-xl sticky top-16 z-30">
-        <div className="container mx-auto px-4 py-5 max-w-7xl">
+      <div className="border-b border-border/30 bg-background/80 backdrop-blur-xl">
+        <div className="container mx-auto px-4 py-4 max-w-7xl">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -167,7 +167,7 @@ export default function RecommendationsPage() {
           </motion.div>
 
           {/* Sorting Controls */}
-          <div className="flex items-center gap-2 mt-4 flex-wrap">
+          <div className="flex items-center gap-2 mt-4 pb-1 flex-wrap">
             <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mr-1">Sort by</span>
             {[
@@ -194,7 +194,7 @@ export default function RecommendationsPage() {
       </div>
 
       {/* ── Product Grid ── */}
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="container mx-auto px-4 pt-8 pb-10 max-w-7xl">
         <motion.div
           variants={stagger}
           initial="hidden"
