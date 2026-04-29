@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Users, Search, Trash2, Shield, ShieldOff, Eye,
-  ChevronLeft, ChevronRight, ArrowUpDown,
+  ChevronLeft, ChevronRight, ArrowUpDown, FileDown, FileUp,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "@/config";
@@ -27,6 +27,73 @@ export default function AdminUsers() {
   const [deletingId, setDeletingId] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [togglingId, setTogglingId] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkLoading, setBulkLoading] = useState(false);
+
+  const exportUsersCsv = () => {
+    const rows = [
+      ["userId", "username", "name", "mobileNo", "isAdmin", "uploadsCount", "favoritesCount", "createdAt"],
+      ...users.map((u) => [
+        u._id,
+        u.username || "",
+        u.name || "",
+        u.mobileNo || "",
+        String(Boolean(u.isAdmin)),
+        String(u.uploadsCount || 0),
+        String(u.favoritesCount || 0),
+        u.createdAt || "",
+      ]),
+    ];
+    const csv = rows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `admin-users-page-${pagination.page}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadUsersTemplateCsv = () => {
+    const rows = [
+      ["userId"],
+      ["665f1c8e0a00000000000001"],
+      ["665f1c8e0a00000000000002"],
+    ];
+    const csv = rows.map((row) => row.map((cell) => `"${cell}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "users-import-template.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importUsersCsv = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).filter(Boolean);
+    if (lines.length < 2) return;
+
+    const header = lines[0].split(",").map((h) => h.replace(/"/g, "").trim());
+    const idIndex = header.findIndex((h) => h === "userId");
+    if (idIndex === -1) {
+      alert("CSV must contain a userId column");
+      return;
+    }
+
+    const importedIds = lines
+      .slice(1)
+      .map((line) => line.split(","))
+      .map((cols) => cols[idIndex]?.replace(/"/g, "").trim())
+      .filter(Boolean);
+
+    setSelectedIds(Array.from(new Set(importedIds)));
+    event.target.value = "";
+  };
 
   const fetchUsers = async (page = 1) => {
     setIsLoading(true);
@@ -111,6 +178,37 @@ export default function AdminUsers() {
     }
   };
 
+  const toggleUserSelection = (id) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const runBulkAction = async (action) => {
+    if (selectedIds.length === 0) return;
+    setBulkLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/users/bulk-action`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action, userIds: selectedIds }),
+      });
+
+      if (res.ok) {
+        await fetchUsers(pagination.page);
+        setSelectedIds([]);
+      } else {
+        const err = await res.json();
+        alert(err.message || "Bulk action failed");
+      }
+    } catch (error) {
+      console.error("Bulk action failed:", error);
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
   const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleDateString("en-IN", {
       day: "numeric",
@@ -169,6 +267,31 @@ export default function AdminUsers() {
         </div>
       </motion.div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="outline" size="sm" className="rounded-xl" onClick={exportUsersCsv}>
+          <FileDown className="h-3.5 w-3.5 mr-1" /> Export CSV
+        </Button>
+        <Button variant="outline" size="sm" className="rounded-xl" onClick={downloadUsersTemplateCsv}>
+          <FileDown className="h-3.5 w-3.5 mr-1" /> Template CSV
+        </Button>
+        <label className="inline-flex">
+          <input type="file" accept=".csv" className="hidden" onChange={importUsersCsv} />
+          <span className="inline-flex items-center rounded-xl border border-input bg-background px-3 py-2 text-sm cursor-pointer hover:bg-muted">
+            <FileUp className="h-3.5 w-3.5 mr-1" /> Import CSV
+          </span>
+        </label>
+        <Button variant="outline" size="sm" className="rounded-xl" disabled={bulkLoading || selectedIds.length === 0} onClick={() => runBulkAction("promote")}>
+          Promote Selected
+        </Button>
+        <Button variant="outline" size="sm" className="rounded-xl" disabled={bulkLoading || selectedIds.length === 0} onClick={() => runBulkAction("demote")}>
+          Demote Selected
+        </Button>
+        <Button variant="destructive" size="sm" className="rounded-xl" disabled={bulkLoading || selectedIds.length === 0} onClick={() => runBulkAction("delete")}>
+          Delete Selected
+        </Button>
+        <span className="text-xs text-muted-foreground">{selectedIds.length} selected</span>
+      </div>
+
       {/* Users Table */}
       {isLoading ? (
         <div className="space-y-3">
@@ -209,6 +332,7 @@ export default function AdminUsers() {
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
                       {/* User info */}
                       <div className="md:col-span-3 flex items-center gap-3">
+                        <input type="checkbox" checked={selectedIds.includes(u._id)} onChange={() => toggleUserSelection(u._id)} />
                         <div className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 p-[2px] shrink-0">
                           <img
                             src={`https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || u.username)}&background=random&size=64&bold=true`}

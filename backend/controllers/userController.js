@@ -92,6 +92,11 @@ const getUserProfile = async (req, res) => {
         isAdmin: user.isAdmin,
         styleLevel: user.styleLevel,
         uploadsCount: user.uploadsCount,
+        stylePreference: user.stylePreference,
+        fitPreference: user.fitPreference,
+        savedFilters: user.savedFilters || [],
+        favoritesCount: user.favorites?.length || 0,
+        createdAt: user.createdAt,
       });
     } else {
       res.status(404).json({ message: "User not found" });

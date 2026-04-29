@@ -1,6 +1,16 @@
 const User = require("../models/User");
 const SearchHistory = require("../models/SearchHistory");
 const Activity = require("../models/Activity");
+const AuditLog = require("../models/AuditLog");
+const mongoose = require("mongoose");
+
+const logAdminAction = async ({ adminId, action, targetType = "system", targetId = null, details = {} }) => {
+  try {
+    await AuditLog.create({ adminId, action, targetType, targetId, details });
+  } catch (error) {
+    console.error("Audit log failed:", error.message);
+  }
+};
 
 // ──────────────────────────────────────────────
 // 1. Dashboard Stats
@@ -180,6 +190,14 @@ const deleteUser = async (req, res) => {
       User.findByIdAndDelete(user._id),
     ]);
 
+    await logAdminAction({
+      adminId: req.user._id,
+      action: "user_deleted",
+      targetType: "user",
+      targetId: user._id,
+      details: { username: user.username, mobileNo: user.mobileNo },
+    });
+
     res.json({ message: "User and associated data deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -202,6 +220,14 @@ const toggleAdminRole = async (req, res) => {
 
     user.isAdmin = !user.isAdmin;
     await user.save();
+
+    await logAdminAction({
+      adminId: req.user._id,
+      action: user.isAdmin ? "user_promoted_to_admin" : "admin_demoted_to_user",
+      targetType: "user",
+      targetId: user._id,
+      details: { username: user.username, isAdmin: user.isAdmin },
+    });
 
     res.json({
       _id: user._id,
@@ -251,6 +277,15 @@ const deleteSearch = async (req, res) => {
   try {
     const search = await SearchHistory.findByIdAndDelete(req.params.id);
     if (!search) return res.status(404).json({ message: "Search entry not found" });
+
+    await logAdminAction({
+      adminId: req.user._id,
+      action: "search_deleted",
+      targetType: "search",
+      targetId: search._id,
+      details: { ownerId: search.userId, matchesCount: search.matchesCount || 0 },
+    });
+
     res.json({ message: "Search entry deleted" });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -324,6 +359,207 @@ const getRecentActivity = async (req, res) => {
   }
 };
 
+// ──────────────────────────────────────────────
+// 10. Alerts for Notification Center
+// GET /api/admin/alerts
+// ──────────────────────────────────────────────
+const getAdminAlerts = async (req, res) => {
+  try {
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const [newUsers24h, searches24h, activeUsers7d] = await Promise.all([
+      User.countDocuments({ createdAt: { $gte: yesterday } }),
+      SearchHistory.countDocuments({ createdAt: { $gte: yesterday } }),
+      Activity.distinct("userId", { createdAt: { $gte: sevenDaysAgo } }).then((ids) => ids.length),
+    ]);
+
+    const alerts = [];
+    if (searches24h === 0) {
+      alerts.push({ level: "warning", code: "no_searches_24h", message: "No searches recorded in the last 24 hours." });
+    }
+    if (newUsers24h === 0) {
+      alerts.push({ level: "info", code: "no_new_users_24h", message: "No new users signed up in the last 24 hours." });
+    }
+    if (activeUsers7d < 5) {
+      alerts.push({ level: "warning", code: "low_active_users", message: "Low active users in last 7 days." });
+    }
+
+    res.json({ alerts, metrics: { newUsers24h, searches24h, activeUsers7d } });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ──────────────────────────────────────────────
+// 11. Global Admin Search
+// GET /api/admin/search?q=...
+// ──────────────────────────────────────────────
+const globalAdminSearch = async (req, res) => {
+  try {
+    const q = (req.query.q || "").trim();
+    if (!q) return res.json({ users: [], searches: [], activity: [] });
+
+    const regex = new RegExp(q, "i");
+
+    const [users, searches, activity] = await Promise.all([
+      User.find({
+        $or: [{ username: regex }, { name: regex }, { mobileNo: regex }],
+      })
+        .select("username name mobileNo isAdmin createdAt uploadsCount")
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean(),
+      SearchHistory.find({ $or: [{ imageUrl: regex }, { "matches.name": regex }, { "matches.source": regex }] })
+        .select("userId imageUrl matchesCount createdAt")
+        .populate("userId", "username name")
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean(),
+      Activity.find({ $or: [{ type: regex }] })
+        .select("userId type metadata createdAt")
+        .populate("userId", "username name")
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean(),
+    ]);
+
+    res.json({ users, searches, activity });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ──────────────────────────────────────────────
+// 12. Audit Logs
+// GET /api/admin/audit?limit=30
+// ──────────────────────────────────────────────
+const getAuditLogs = async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 30, 100);
+    const query = {};
+    if (req.query.action) query.action = { $regex: req.query.action, $options: "i" };
+    if (req.query.adminId) query.adminId = req.query.adminId;
+    if (req.query.from || req.query.to) {
+      query.createdAt = {};
+      if (req.query.from) query.createdAt.$gte = new Date(req.query.from);
+      if (req.query.to) {
+        const end = new Date(req.query.to);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = end;
+      }
+    }
+
+    const logs = await AuditLog.find()
+      .find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .populate("adminId", "username name")
+      .lean();
+
+    res.json(logs);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const bulkUserAction = async (req, res) => {
+  try {
+    const { action, userIds } = req.body;
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ message: "userIds are required" });
+    }
+
+    const safeIds = userIds.filter((id) => id && id !== req.user._id.toString());
+    if (safeIds.length === 0) {
+      return res.status(400).json({ message: "No valid users to process" });
+    }
+
+    if (action === "delete") {
+      await Promise.all([
+        SearchHistory.deleteMany({ userId: { $in: safeIds } }),
+        Activity.deleteMany({ userId: { $in: safeIds } }),
+        User.deleteMany({ _id: { $in: safeIds } }),
+      ]);
+    } else if (action === "promote" || action === "demote") {
+      await User.updateMany({ _id: { $in: safeIds } }, { $set: { isAdmin: action === "promote" } });
+    } else {
+      return res.status(400).json({ message: "Unsupported action" });
+    }
+
+    await logAdminAction({
+      adminId: req.user._id,
+      action: `bulk_${action}`,
+      targetType: "user",
+      details: { count: safeIds.length },
+    });
+
+    res.json({ message: `Bulk ${action} completed`, affected: safeIds.length });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const bulkSearchDelete = async (req, res) => {
+  try {
+    const { searchIds } = req.body;
+    if (!Array.isArray(searchIds) || searchIds.length === 0) {
+      return res.status(400).json({ message: "searchIds are required" });
+    }
+
+    const result = await SearchHistory.deleteMany({ _id: { $in: searchIds } });
+    await logAdminAction({
+      adminId: req.user._id,
+      action: "bulk_search_delete",
+      targetType: "search",
+      details: { count: result.deletedCount || 0 },
+    });
+
+    res.json({ message: "Bulk search delete completed", affected: result.deletedCount || 0 });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const getSystemHealth = async (req, res) => {
+  try {
+    const now = new Date();
+    const dayAgo = new Date(now);
+    dayAgo.setDate(dayAgo.getDate() - 1);
+
+    const [searches24h, activity24h, users24h, latestSearch, latestActivity] = await Promise.all([
+      SearchHistory.countDocuments({ createdAt: { $gte: dayAgo } }),
+      Activity.countDocuments({ createdAt: { $gte: dayAgo } }),
+      User.countDocuments({ createdAt: { $gte: dayAgo } }),
+      SearchHistory.findOne().sort({ createdAt: -1 }).select("createdAt").lean(),
+      Activity.findOne().sort({ createdAt: -1 }).select("createdAt").lean(),
+    ]);
+
+    const dbStateMap = {
+      0: "disconnected",
+      1: "connected",
+      2: "connecting",
+      3: "disconnecting",
+    };
+
+    res.json({
+      database: dbStateMap[mongoose.connection.readyState] || "unknown",
+      metrics: {
+        searches24h,
+        activity24h,
+        users24h,
+        latestSearchAt: latestSearch?.createdAt || null,
+        latestActivityAt: latestActivity?.createdAt || null,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getAllUsers,
@@ -334,4 +570,10 @@ module.exports = {
   deleteSearch,
   getPlatformActivity,
   getRecentActivity,
+  getAdminAlerts,
+  globalAdminSearch,
+  getAuditLogs,
+  bulkUserAction,
+  bulkSearchDelete,
+  getSystemHealth,
 };

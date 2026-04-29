@@ -9,6 +9,7 @@ const DashboardPage = lazy(() => import("./pages/DashboardPage"));
 const UploadPage = lazy(() => import("./pages/UploadPage"));
 const RecommendationsPage = lazy(() => import("./pages/RecommendationsPage"));
 const TryOnStudio = lazy(() => import("./pages/TryOnStudio"));
+const WardrobePage = lazy(() => import("./pages/WardrobePage"));
 const ProfileSetupPage = lazy(() => import("./pages/ProfileSetupPage"));
 const SearchHistoryPage = lazy(() => import("./pages/SearchHistoryPage"));
 const FavoritesPage = lazy(() => import("./pages/FavoritesPage"));
@@ -21,6 +22,8 @@ const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminUserDetail = lazy(() => import("./pages/admin/AdminUserDetail"));
 const AdminSearches = lazy(() => import("./pages/admin/AdminSearches"));
 const AdminActivity = lazy(() => import("./pages/admin/AdminActivity"));
+const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
+const AdminGlobalSearch = lazy(() => import("./pages/admin/AdminGlobalSearch"));
 
 // Loading fallback for lazy pages
 function PageLoader() {
@@ -69,6 +72,7 @@ const router = createBrowserRouter([
       { path: "dashboard", element: <ProtectedRoute><DashboardPage /></ProtectedRoute> },
       { path: "upload", element: <LazyPage><UploadPage /></LazyPage> },
       { path: "studio", element: <LazyPage><TryOnStudio /></LazyPage> },
+      { path: "wardrobe", element: <ProtectedRoute><WardrobePage /></ProtectedRoute> },
       { path: "recommendations", element: <LazyPage><RecommendationsPage /></LazyPage> },
       { path: "favorites", element: <LazyPage><FavoritesPage /></LazyPage> },
       { path: "profile-setup", element: <ProtectedRoute><ProfileSetupPage /></ProtectedRoute> },
@@ -89,6 +93,8 @@ const router = createBrowserRouter([
       { path: "users/:id", element: <LazyPage><AdminUserDetail /></LazyPage> },
       { path: "searches", element: <LazyPage><AdminSearches /></LazyPage> },
       { path: "activity", element: <LazyPage><AdminActivity /></LazyPage> },
+      { path: "audit", element: <LazyPage><AdminAudit /></LazyPage> },
+      { path: "global-search", element: <LazyPage><AdminGlobalSearch /></LazyPage> },
     ],
   },
 ]);

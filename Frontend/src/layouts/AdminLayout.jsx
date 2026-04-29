@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   LayoutDashboard, Users, Search, Activity, ArrowLeft,
-  Shield, Menu, X, ChevronRight, LogOut,
+  Shield, Menu, X, ChevronRight, LogOut, ClipboardList, Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/Logo";
@@ -15,6 +15,8 @@ const sidebarLinks = [
   { name: "Users", path: "/admin/users", icon: Users },
   { name: "Searches", path: "/admin/searches", icon: Search },
   { name: "Activity", path: "/admin/activity", icon: Activity },
+  { name: "Global Search", path: "/admin/global-search", icon: Bell },
+  { name: "Audit Logs", path: "/admin/audit", icon: ClipboardList },
 ];
 
 export default function AdminLayout() {

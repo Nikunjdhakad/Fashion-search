@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAppContext } from "@/context/AppContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Heart, ShoppingBag, Upload, ArrowRight, ExternalLink, Search, Sparkles, ArrowUpDown, TrendingUp, TrendingDown, Type } from "lucide-react";
+import { Heart, ShoppingBag, Upload, ArrowRight, ExternalLink, Search, Sparkles, ArrowUpDown, TrendingUp, TrendingDown, Type, SlidersHorizontal, BookmarkPlus, GitCompare } from "lucide-react";
 import { Link } from "react-router-dom";
 import AuthPromptModal from "@/components/AuthPromptModal";
 import usePageTitle from "@/hooks/usePageTitle";
@@ -20,17 +20,28 @@ const fadeUp = {
 
 export default function RecommendationsPage() {
   usePageTitle("Style Matches");
-  const { recommendations, latestUpload, addFavorite, removeFavorite, favorites, user } = useAppContext();
+  const { recommendations, latestUpload, addFavorite, removeFavorite, favorites, user, savedFilters, saveFilterPreset, deleteFilterPreset } = useAppContext();
   const outfits = recommendations?.length > 0 ? recommendations : [];
   const [savingId, setSavingId] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authAction, setAuthAction] = useState("continue");
   const [hoveredId, setHoveredId] = useState(null);
   const [sortBy, setSortBy] = useState("match");
+  const [filters, setFilters] = useState({ minPrice: 0, maxPrice: 100000, minMatchScore: 0, tag: "" });
+  const [presetName, setPresetName] = useState("");
+  const [compareIds, setCompareIds] = useState([]);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Sort products
   const parsePrice = (p) => { const n = parseFloat(String(p || "").replace(/[^0-9.]/g, "")); return isNaN(n) ? Infinity : n; };
-  const sortedOutfits = [...outfits].sort((a, b) => {
+  const filteredOutfits = outfits.filter((o) => {
+    const price = parsePrice(o.price);
+    const score = o.matchScore || 0;
+    const tagPass = !filters.tag || (o.tags || []).some((t) => String(t).toLowerCase().includes(filters.tag.toLowerCase()));
+    return price >= filters.minPrice && price <= filters.maxPrice && score >= filters.minMatchScore && tagPass;
+  });
+
+  const sortedOutfits = [...filteredOutfits].sort((a, b) => {
     switch (sortBy) {
       case "price-low": return parsePrice(a.price) - parsePrice(b.price);
       case "price-high": return parsePrice(b.price) - parsePrice(a.price);
@@ -82,6 +93,7 @@ export default function RecommendationsPage() {
   };
 
   const isFavorited = (outfit) => !!getFavoriteEntry(outfit);
+  const comparedItems = sortedOutfits.filter((o) => compareIds.includes(o.id));
 
   // ── Empty State ──
   if (outfits.length === 0) {
@@ -189,6 +201,80 @@ export default function RecommendationsPage() {
                 {opt.label}
               </button>
             ))}
+          </div>
+
+          <div className="mt-3 space-y-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className={`h-10 rounded-xl gap-2 px-4 border-border/50 transition-all ${
+                showFilters
+                  ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 hover:bg-primary/90"
+                  : "bg-background/70 hover:bg-muted/70"
+              }`}
+              onClick={() => setShowFilters((prev) => !prev)}
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              {showFilters ? "Hide Filters" : "Show Filters"}
+            </Button>
+
+            <AnimatePresence initial={false}>
+              {showFilters && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: "auto" }}
+                  exit={{ opacity: 0, y: -8, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-muted/40 to-background border border-border/50 space-y-3 shadow-sm">
+                    <div className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Refine Matches</div>
+                    <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-2">
+                      <input type="number" min="0" value={filters.minPrice} onChange={(e) => setFilters((p) => ({ ...p, minPrice: Number(e.target.value || 0) }))} className="h-10 rounded-xl border border-input bg-background px-3 text-sm" placeholder="Min price" />
+                      <input type="number" min="0" value={filters.maxPrice} onChange={(e) => setFilters((p) => ({ ...p, maxPrice: Number(e.target.value || 100000) }))} className="h-10 rounded-xl border border-input bg-background px-3 text-sm" placeholder="Max price" />
+                      <input type="number" min="0" max="100" value={filters.minMatchScore} onChange={(e) => setFilters((p) => ({ ...p, minMatchScore: Number(e.target.value || 0) }))} className="h-10 rounded-xl border border-input bg-background px-3 text-sm" placeholder="Min match %" />
+                      <input type="text" value={filters.tag} onChange={(e) => setFilters((p) => ({ ...p, tag: e.target.value }))} className="h-10 rounded-xl border border-input bg-background px-3 text-sm" placeholder="Tag (e.g. Premium)" />
+                      <input type="text" value={presetName} onChange={(e) => setPresetName(e.target.value)} className="h-10 rounded-xl border border-input bg-background px-3 text-sm" placeholder="Preset name" />
+                      <Button
+                        size="sm"
+                        className="h-10 rounded-xl gap-1.5"
+                        onClick={async () => {
+                          if (!presetName.trim()) return;
+                          await saveFilterPreset({ name: presetName.trim(), filters: { ...filters, sortBy } });
+                          setPresetName("");
+                        }}
+                      >
+                        <BookmarkPlus className="h-3.5 w-3.5" /> Save Preset
+                      </Button>
+                    </div>
+                    {savedFilters.length > 0 && (
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {savedFilters.map((preset) => (
+                          <div key={preset._id} className="inline-flex items-center gap-1.5 bg-background border border-border/50 rounded-xl px-2.5 py-1.5 text-xs shadow-sm">
+                            <button
+                              onClick={() => {
+                                setFilters({
+                                  minPrice: preset.filters?.minPrice ?? 0,
+                                  maxPrice: preset.filters?.maxPrice ?? 100000,
+                                  minMatchScore: preset.filters?.minMatchScore ?? 0,
+                                  tag: preset.filters?.tag ?? "",
+                                });
+                                if (preset.filters?.sortBy) setSortBy(preset.filters.sortBy);
+                              }}
+                              className="font-medium hover:text-primary"
+                            >
+                              {preset.name}
+                            </button>
+                            <button onClick={() => deleteFilterPreset(preset._id)} className="text-muted-foreground hover:text-destructive">x</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>
@@ -310,12 +396,42 @@ export default function RecommendationsPage() {
                         </span>
                       )}
                     </div>
+                    <div className="mt-2">
+                      <Button
+                        variant={compareIds.includes(outfit.id) ? "default" : "outline"}
+                        size="sm"
+                        className="h-8 rounded-lg w-full text-xs gap-1.5"
+                        onClick={() =>
+                          setCompareIds((prev) =>
+                            prev.includes(outfit.id) ? prev.filter((id) => id !== outfit.id) : [...prev.slice(-1), outfit.id]
+                          )
+                        }
+                      >
+                        <GitCompare className="h-3.5 w-3.5" />
+                        {compareIds.includes(outfit.id) ? "Selected for Compare" : "Compare"}
+                      </Button>
+                    </div>
                   </div>
                 </motion.div>
               </motion.div>
             );
           })}
         </motion.div>
+
+        {comparedItems.length === 2 && (
+          <div className="mt-8 rounded-2xl border border-border/40 bg-card/40 p-4">
+            <h3 className="text-sm font-semibold mb-3">Compare Mode</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              {comparedItems.map((item) => (
+                <div key={item.id} className="rounded-xl border border-border/40 p-3 bg-background/50">
+                  <p className="text-sm font-semibold line-clamp-2">{item.name}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Match: {item.matchScore || 0}%</p>
+                  <p className="text-xs text-muted-foreground">Price: {item.price || "N/A"}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Auth Prompt Modal */}

@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Search, Trash2, ChevronLeft, ChevronRight,
   Image as ImageIcon, User, Calendar, ExternalLink,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, FileDown, FileUp,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { API_BASE_URL } from "@/config";
@@ -22,6 +22,8 @@ export default function AdminSearches() {
   const [isLoading, setIsLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const fetchSearches = async (page = 1) => {
     setIsLoading(true);
@@ -77,6 +79,89 @@ export default function AdminSearches() {
     return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
   };
 
+  const exportSearchesCsv = () => {
+    const rows = [
+      ["searchId", "user", "matchesCount", "createdAt", "imageUrl"],
+      ...searches.map((s) => [
+        s._id,
+        s.userId?.username || s.userId?.name || "",
+        String(s.matchesCount || s.matches?.length || 0),
+        s.createdAt || "",
+        s.imageUrl || "",
+      ]),
+    ];
+    const csv = rows.map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `admin-searches-page-${pagination.page}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadSearchesTemplateCsv = () => {
+    const rows = [
+      ["searchId"],
+      ["665f1c8e0a00000000001001"],
+      ["665f1c8e0a00000000001002"],
+    ];
+    const csv = rows.map((row) => row.map((cell) => `"${cell}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "searches-import-template.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importSearchesCsv = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).filter(Boolean);
+    if (lines.length < 2) return;
+
+    const header = lines[0].split(",").map((h) => h.replace(/"/g, "").trim());
+    const idx = header.findIndex((h) => h === "searchId");
+    if (idx === -1) {
+      alert("CSV must include a searchId column");
+      return;
+    }
+
+    const imported = lines
+      .slice(1)
+      .map((line) => line.split(","))
+      .map((cols) => cols[idx]?.replace(/"/g, "").trim())
+      .filter(Boolean);
+    setSelectedIds(Array.from(new Set(imported)));
+    event.target.value = "";
+  };
+
+  const bulkDeleteSearches = async () => {
+    if (selectedIds.length === 0) return;
+    setBulkLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/admin/searches/bulk-delete`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ searchIds: selectedIds }),
+      });
+      if (res.ok) {
+        await fetchSearches(pagination.page);
+        setSelectedIds([]);
+      }
+    } catch (error) {
+      console.error("Bulk delete failed:", error);
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Header */}
@@ -90,6 +175,25 @@ export default function AdminSearches() {
         </h1>
         <p className="text-muted-foreground text-sm mt-1">All visual searches across the platform</p>
       </motion.div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="outline" size="sm" className="rounded-xl" onClick={exportSearchesCsv}>
+          <FileDown className="h-3.5 w-3.5 mr-1" /> Export CSV
+        </Button>
+        <Button variant="outline" size="sm" className="rounded-xl" onClick={downloadSearchesTemplateCsv}>
+          <FileDown className="h-3.5 w-3.5 mr-1" /> Template CSV
+        </Button>
+        <label className="inline-flex">
+          <input type="file" accept=".csv" className="hidden" onChange={importSearchesCsv} />
+          <span className="inline-flex items-center rounded-xl border border-input bg-background px-3 py-2 text-sm cursor-pointer hover:bg-muted">
+            <FileUp className="h-3.5 w-3.5 mr-1" /> Import CSV
+          </span>
+        </label>
+        <Button variant="destructive" size="sm" className="rounded-xl" disabled={bulkLoading || selectedIds.length === 0} onClick={bulkDeleteSearches}>
+          Delete Imported/Selected
+        </Button>
+        <span className="text-xs text-muted-foreground">{selectedIds.length} selected</span>
+      </div>
 
       {/* Search List */}
       {isLoading ? (
@@ -118,6 +222,15 @@ export default function AdminSearches() {
                   <CardContent className="p-4">
                     {/* Main row */}
                     <div className="flex items-center gap-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(entry._id)}
+                        onChange={() =>
+                          setSelectedIds((prev) =>
+                            prev.includes(entry._id) ? prev.filter((id) => id !== entry._id) : [...prev, entry._id]
+                          )
+                        }
+                      />
                       {/* Image */}
                       <div className="h-14 w-14 rounded-xl overflow-hidden border border-border/50 shrink-0 bg-muted">
                         {entry.imageUrl ? (

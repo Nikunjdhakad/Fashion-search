@@ -2,12 +2,54 @@ import { motion } from "framer-motion";
 import { User, Phone, Shield, Sparkles, Upload, Heart, Clock } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { Link } from "react-router-dom";
+import { API_BASE_URL } from "@/config";
 import usePageTitle from "@/hooks/usePageTitle";
+import { Button } from "@/components/ui/button";
 
 export default function ProfileSetupPage() {
-  const { user, favorites } = useAppContext();
+  const { user, favorites, logout } = useAppContext();
   usePageTitle("Profile");
   const displayName = user?.name || user?.fullName || user?.username || "User";
+  const completionChecks = [
+    Boolean(user?.name),
+    Boolean(user?.email),
+    Boolean(user?.stylePreference),
+    Boolean(user?.fitPreference),
+  ];
+  const completionPct = Math.round((completionChecks.filter(Boolean).length / completionChecks.length) * 100);
+
+  const handleExportData = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/users/export-data`, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "deep-fashion-user-export.json";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to export data:", error);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm("Delete your account permanently? This cannot be undone.");
+    if (!confirmed) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/users/profile`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      if (res.ok) logout();
+    } catch (error) {
+      console.error("Failed to delete account:", error);
+    }
+  };
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] w-full">
@@ -66,6 +108,13 @@ export default function ProfileSetupPage() {
         >
           <h1 className="text-3xl font-bold tracking-tight mb-1">Profile</h1>
           <p className="text-muted-foreground">Your account information.</p>
+          <div className="mt-4">
+            <p className="text-xs text-muted-foreground mb-1">Profile Completion</p>
+            <div className="h-2 rounded-full bg-muted overflow-hidden max-w-sm">
+              <div className="h-full bg-primary" style={{ width: `${completionPct}%` }} />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">{completionPct}% complete</p>
+          </div>
         </motion.div>
 
         {/* Account Info */}
@@ -118,6 +167,19 @@ export default function ProfileSetupPage() {
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Member Since</p>
               <p className="text-base font-semibold">{user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" }) : "—"}</p>
             </div>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="rounded-2xl border border-border/40 bg-card/40 backdrop-blur-sm p-6 shadow-sm mt-6"
+        >
+          <h2 className="text-lg font-semibold mb-4">Privacy Controls</h2>
+          <div className="flex flex-wrap gap-3">
+            <Button variant="outline" onClick={handleExportData}>Export My Data</Button>
+            <Button variant="destructive" onClick={handleDeleteAccount}>Delete Account</Button>
           </div>
         </motion.div>
       </div>

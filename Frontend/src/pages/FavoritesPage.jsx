@@ -9,6 +9,7 @@ import {
 import { Link } from "react-router-dom";
 import AuthPromptModal from "@/components/AuthPromptModal";
 import usePageTitle from "@/hooks/usePageTitle";
+import { API_BASE_URL } from "@/config";
 
 const stagger = {
   hidden: { opacity: 0 },
@@ -22,15 +23,66 @@ const fadeUp = {
 
 export default function FavoritesPage() {
   usePageTitle("Favorites");
-  const { favorites, removeFavorite, user } = useAppContext();
+  const { favorites, removeFavorite, updateFavorite, user } = useAppContext();
   const [removingId, setRemovingId] = useState(null);
   const [showConfirm, setShowConfirm] = useState(null);
+  const [activeFolder, setActiveFolder] = useState("All");
+  const [editingId, setEditingId] = useState(null);
+  const [editState, setEditState] = useState({ folder: "General", note: "", priceAlertTarget: "" });
+  const [isCheckingPrices, setIsCheckingPrices] = useState(false);
+  const [priceCheckMessage, setPriceCheckMessage] = useState("");
+
+  const folders = ["All", ...Array.from(new Set(favorites.map((f) => f.folder || "General")))];
+  const displayedFavorites = activeFolder === "All" ? favorites : favorites.filter((f) => (f.folder || "General") === activeFolder);
 
   const handleRemove = async (id) => {
     setRemovingId(id);
     await removeFavorite(id);
     setRemovingId(null);
     setShowConfirm(null);
+  };
+
+  const startEdit = (item) => {
+    setEditingId(item._id);
+    setEditState({
+      folder: item.folder || "General",
+      note: item.note || "",
+      priceAlertTarget: item.priceAlertTarget || "",
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editingId) return;
+    await updateFavorite(editingId, editState);
+    setEditingId(null);
+  };
+
+  const runPriceCheck = async () => {
+    if (!user?.token) return;
+    setIsCheckingPrices(true);
+    setPriceCheckMessage("");
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/users/price-alerts/check`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setPriceCheckMessage(err.message || "Price alert check failed. Please try again.");
+        return;
+      }
+      const data = await res.json();
+      setPriceCheckMessage(
+        data.generated > 0
+          ? `${data.generated} price alert(s) generated successfully.`
+          : "Price check completed. No items matched your target yet."
+      );
+    } catch (error) {
+      console.error("Failed to run price check:", error);
+      setPriceCheckMessage("Network error while running price check.");
+    } finally {
+      setIsCheckingPrices(false);
+    }
   };
 
   // Empty state
@@ -110,7 +162,7 @@ export default function FavoritesPage() {
                 <Heart className="h-5 w-5 text-pink-500 fill-pink-500" />
                 My Favorites
                 <Badge variant="secondary" className="text-xs font-bold px-2 py-0.5 rounded-md">
-                  {favorites.length}
+                  {displayedFavorites.length}
                 </Badge>
               </h1>
               <p className="text-sm text-muted-foreground mt-0.5">Your saved fashion finds</p>
@@ -121,12 +173,33 @@ export default function FavoritesPage() {
                 Find More
               </Button>
             </Link>
+            <Button variant="outline" size="sm" className="rounded-xl h-10" onClick={runPriceCheck}>
+              {isCheckingPrices ? "Checking..." : "Run Price Alert Check"}
+            </Button>
           </motion.div>
+          {priceCheckMessage ? (
+            <div className="mt-3 rounded-lg border border-border/40 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              {priceCheckMessage}
+            </div>
+          ) : null}
         </div>
       </div>
 
       {/* Grid */}
       <div className="container mx-auto px-4 pt-8 pb-10 max-w-6xl">
+        <div className="flex flex-wrap gap-2 mb-5">
+          {folders.map((folder) => (
+            <button
+              key={folder}
+              onClick={() => setActiveFolder(folder)}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors ${
+                activeFolder === folder ? "bg-primary text-primary-foreground border-primary" : "bg-background border-border hover:bg-muted"
+              }`}
+            >
+              {folder}
+            </button>
+          ))}
+        </div>
         <motion.div
           variants={stagger}
           initial="hidden"
@@ -134,7 +207,7 @@ export default function FavoritesPage() {
           className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
         >
           <AnimatePresence mode="popLayout">
-            {favorites.map((item) => (
+            {displayedFavorites.map((item) => (
               <motion.div
                 key={item._id}
                 variants={fadeUp}
@@ -222,8 +295,16 @@ export default function FavoritesPage() {
                     <p className="text-xs text-muted-foreground line-clamp-1 mb-3">
                       {item.description || "Saved from visual search"}
                     </p>
+                    <div className="mb-3 space-y-1">
+                      <p className="text-[10px] text-muted-foreground">Folder: {item.folder || "General"}</p>
+                      {item.note ? <p className="text-[10px] text-muted-foreground line-clamp-2">Note: {item.note}</p> : null}
+                      {item.priceAlertTarget ? <p className="text-[10px] text-amber-600 dark:text-amber-400">Alert at: {item.priceAlertTarget}</p> : null}
+                    </div>
 
                     <div className="mt-auto">
+                      <Button size="sm" variant="outline" className="w-full rounded-xl h-8 font-semibold mb-2" onClick={() => startEdit(item)}>
+                        Edit Folder/Note
+                      </Button>
                       <a
                         href={item.shopLink || "#"}
                         target="_blank"
@@ -243,6 +324,28 @@ export default function FavoritesPage() {
             ))}
           </AnimatePresence>
         </motion.div>
+
+        <AnimatePresence>
+          {editingId && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+            >
+              <div className="w-full max-w-md rounded-2xl bg-background border border-border p-4 space-y-3">
+                <h3 className="text-sm font-semibold">Update Favorite</h3>
+                <input className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm" value={editState.folder} onChange={(e) => setEditState((p) => ({ ...p, folder: e.target.value }))} placeholder="Folder name" />
+                <input className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm" value={editState.note} onChange={(e) => setEditState((p) => ({ ...p, note: e.target.value }))} placeholder="Personal note" />
+                <input className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm" value={editState.priceAlertTarget} onChange={(e) => setEditState((p) => ({ ...p, priceAlertTarget: e.target.value }))} placeholder="Price alert target (optional)" />
+                <div className="flex gap-2">
+                  <Button className="flex-1 rounded-lg" onClick={saveEdit}>Save</Button>
+                  <Button variant="outline" className="flex-1 rounded-lg" onClick={() => setEditingId(null)}>Cancel</Button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -13,7 +13,7 @@ const getFavorites = async (req, res) => {
 // Add a favorite
 const addFavorite = async (req, res) => {
   try {
-    const { imageUrl, name, shopLink, price, matchScore, description, tags } =
+    const { imageUrl, name, shopLink, price, matchScore, description, tags, folder, note, priceAlertTarget } =
       req.body;
 
     if (!imageUrl || !name) {
@@ -41,11 +41,35 @@ const addFavorite = async (req, res) => {
       matchScore,
       description,
       tags,
+      folder: folder || "General",
+      note: note || "",
+      priceAlertTarget: priceAlertTarget || "",
       savedAt: new Date(),
     });
 
     await user.save();
     res.status(201).json(user.favorites);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const updateFavorite = async (req, res) => {
+  try {
+    const { folder, note, priceAlertTarget } = req.body;
+    const user = await User.findById(req.user._id);
+    const fav = user.favorites.id(req.params.id);
+
+    if (!fav) {
+      return res.status(404).json({ message: "Favorite not found" });
+    }
+
+    if (folder !== undefined) fav.folder = folder || "General";
+    if (note !== undefined) fav.note = note;
+    if (priceAlertTarget !== undefined) fav.priceAlertTarget = priceAlertTarget;
+
+    await user.save();
+    res.json(user.favorites);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -67,4 +91,4 @@ const removeFavorite = async (req, res) => {
   }
 };
 
-module.exports = { getFavorites, addFavorite, removeFavorite };
+module.exports = { getFavorites, addFavorite, updateFavorite, removeFavorite };

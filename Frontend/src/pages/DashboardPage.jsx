@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Image as ImageIcon, Sparkles, BarChart3, Heart, Clock,
   Upload, ArrowRight, TrendingUp, Eye, ShoppingBag, Camera,
+  Target, Star,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "@/config";
@@ -27,6 +28,9 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [activityData, setActivityData] = useState(null);
   const [isLoadingActivity, setIsLoadingActivity] = useState(true);
+  const [recentHistory, setRecentHistory] = useState([]);
+  const [feedback, setFeedback] = useState(() => localStorage.getItem("deep-fashion-feedback") || "");
+  const [notifications, setNotifications] = useState([]);
 
   const totalItems = uploads.reduce((acc, curr) => acc + (curr.itemsDetected || 0), 0);
   const displayName = user?.name || user?.username || "User";
@@ -51,12 +55,52 @@ export default function DashboardPage() {
     fetchActivity();
   }, [user?.token]);
 
+  useEffect(() => {
+    const fetchRecentHistory = async () => {
+      if (!user?.token) return;
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/history?page=1&limit=3`, {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setRecentHistory(data.history || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch recent history:", err);
+      }
+    };
+    fetchRecentHistory();
+  }, [user?.token]);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!user?.token) return;
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/users/notifications`, {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
+        if (res.ok) setNotifications(await res.json());
+      } catch (err) {
+        console.error("Failed to fetch notifications:", err);
+      }
+    };
+    fetchNotifications();
+  }, [user?.token]);
+
   const chartData = activityData?.daily || [];
   const maxCount = Math.max(...chartData.map((d) => d.count), 1);
 
   // Greeting based on time
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
+  const profileFields = [
+    Boolean(user?.name),
+    Boolean(user?.email),
+    Boolean(user?.stylePreference),
+    Boolean(user?.fitPreference),
+  ];
+  const profileCompletion = Math.round((profileFields.filter(Boolean).length / profileFields.length) * 100);
 
   return (
     <div className="flex-1 p-4 md:p-8 max-w-6xl mx-auto w-full space-y-8">
@@ -165,6 +209,41 @@ export default function DashboardPage() {
         ))}
       </motion.div>
 
+      <div className="grid md:grid-cols-3 gap-4">
+        <Card className="bg-card/40 border-border/40">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2"><Target className="h-4 w-4 text-primary" /> Profile Completion</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{profileCompletion}%</p>
+            <div className="mt-2 h-2 rounded-full bg-muted overflow-hidden">
+              <div className="h-full bg-primary" style={{ width: `${profileCompletion}%` }} />
+            </div>
+            <Link to="/profile-setup" className="text-xs text-primary hover:underline mt-2 inline-block">Complete profile</Link>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-card/40 border-border/40 md:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2"><Star className="h-4 w-4 text-amber-500" /> Continue Exploring</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {recentHistory.length > 0 ? (
+              <div className="space-y-2">
+                {recentHistory.map((entry) => (
+                  <div key={entry._id} className="text-xs rounded-lg border border-border/30 p-2 flex items-center justify-between">
+                    <span>{entry.matchesCount || 0} matches from {new Date(entry.createdAt).toLocaleDateString("en-IN")}</span>
+                    <Link to="/history" className="text-primary hover:underline">Open</Link>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No recent searches to continue yet.</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       {/* ── Quick Actions ── */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -172,7 +251,7 @@ export default function DashboardPage() {
         transition={{ delay: 0.2 }}
       >
         <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
-        <div className="grid sm:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-4 gap-4">
           {[
             {
               title: "Visual Search",
@@ -197,6 +276,14 @@ export default function DashboardPage() {
               path: "/history",
               gradient: "from-amber-500/10 to-orange-500/10",
               iconColor: "text-amber-500",
+            },
+            {
+              title: "Wardrobe Builder",
+              desc: "Save your pieces and build looks",
+              icon: ShoppingBag,
+              path: "/wardrobe",
+              gradient: "from-cyan-500/10 to-blue-500/10",
+              iconColor: "text-cyan-500",
             },
           ].map((action) => (
             <Link key={action.path} to={action.path}>
@@ -352,6 +439,49 @@ export default function DashboardPage() {
           </Card>
         </motion.div>
       </div>
+
+      <Card className="bg-card/40 border-border/40">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Notifications</CardTitle>
+          <CardDescription className="text-xs">Price alerts and updates</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {notifications.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No notifications yet.</p>
+          ) : (
+            <div className="space-y-2 max-h-56 overflow-y-auto">
+              {notifications.slice(0, 8).map((n) => (
+                <div key={n._id} className={`rounded-lg border p-2 text-xs ${n.isRead ? "border-border/30" : "border-primary/40 bg-primary/5"}`}>
+                  <p>{n.message}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="bg-card/40 border-border/40">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Quick Feedback</CardTitle>
+          <CardDescription className="text-xs">Tell us if results felt useful</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <textarea
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            className="w-full min-h-20 rounded-lg border border-input bg-background p-3 text-sm"
+            placeholder="Write your feedback..."
+          />
+          <Button
+            size="sm"
+            onClick={() => {
+              localStorage.setItem("deep-fashion-feedback", feedback);
+            }}
+          >
+            Save Feedback
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

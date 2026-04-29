@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Users, Search, Heart, TrendingUp, BarChart3,
-  UserPlus, Zap, Activity as ActivityIcon,
+  UserPlus, Zap, Activity as ActivityIcon, Bell,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { API_BASE_URL } from "@/config";
@@ -27,6 +27,8 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [recentActivity, setRecentActivity] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [alerts, setAlerts] = useState([]);
+  const [health, setHealth] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -39,6 +41,13 @@ export default function AdminDashboard() {
 
         if (statsRes.ok) setStats(await statsRes.json());
         if (activityRes.ok) setRecentActivity(await activityRes.json());
+        const alertsRes = await fetch(`${API_BASE_URL}/api/admin/alerts`, { headers });
+        if (alertsRes.ok) {
+          const alertsData = await alertsRes.json();
+          setAlerts(alertsData.alerts || []);
+        }
+        const healthRes = await fetch(`${API_BASE_URL}/api/admin/system-health`, { headers });
+        if (healthRes.ok) setHealth(await healthRes.json());
       } catch (err) {
         console.error("Failed to fetch admin data:", err);
       } finally {
@@ -215,6 +224,60 @@ export default function AdminDashboard() {
       </div>
 
       {/* Quick Links */}
+      <Card className="bg-card/40 backdrop-blur-sm border-border/40">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Bell className="h-4 w-4 text-amber-500" />
+            Admin Notifications
+          </CardTitle>
+          <CardDescription className="text-xs">Operational alerts based on recent platform usage</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {alerts.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No alerts right now.</p>
+          ) : (
+            <div className="space-y-2">
+              {alerts.map((alert) => (
+                <div key={alert.code} className="rounded-lg border border-border/30 p-3 bg-background/50">
+                  <p className="text-sm font-medium">{alert.message}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="bg-card/40 backdrop-blur-sm border-border/40">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">System Health</CardTitle>
+          <CardDescription className="text-xs">Database and platform pulse in last 24h</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {health ? (
+            <div className="grid sm:grid-cols-4 gap-3 text-sm">
+              <div className="rounded-lg border border-border/30 p-3">
+                <p className="text-xs text-muted-foreground">Database</p>
+                <p className="font-semibold capitalize">{health.database}</p>
+              </div>
+              <div className="rounded-lg border border-border/30 p-3">
+                <p className="text-xs text-muted-foreground">Searches (24h)</p>
+                <p className="font-semibold">{health.metrics?.searches24h ?? 0}</p>
+              </div>
+              <div className="rounded-lg border border-border/30 p-3">
+                <p className="text-xs text-muted-foreground">Activity (24h)</p>
+                <p className="font-semibold">{health.metrics?.activity24h ?? 0}</p>
+              </div>
+              <div className="rounded-lg border border-border/30 p-3">
+                <p className="text-xs text-muted-foreground">New users (24h)</p>
+                <p className="font-semibold">{health.metrics?.users24h ?? 0}</p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Health data unavailable.</p>
+          )}
+        </CardContent>
+      </Card>
+
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}

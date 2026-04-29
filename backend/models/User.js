@@ -9,8 +9,45 @@ const favoriteSchema = new mongoose.Schema({
   matchScore: Number,
   description: String,
   tags: [String],
+  folder: { type: String, default: "General" },
+  note: { type: String, default: "" },
+  priceAlertTarget: { type: String, default: "" },
   savedAt: { type: Date, default: Date.now },
 });
+
+const savedFilterSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    filters: {
+      minPrice: { type: Number, default: 0 },
+      maxPrice: { type: Number, default: 100000 },
+      minMatchScore: { type: Number, default: 0 },
+      sortBy: { type: String, default: "match" },
+      tag: { type: String, default: "" },
+    },
+  },
+  { _id: true, timestamps: true }
+);
+
+const wardrobeItemSchema = new mongoose.Schema(
+  {
+    imageUrl: { type: String, default: "" },
+    name: { type: String, required: true, trim: true },
+    category: { type: String, default: "other" },
+    tags: [{ type: String }],
+  },
+  { _id: true, timestamps: true }
+);
+
+const notificationSchema = new mongoose.Schema(
+  {
+    type: { type: String, default: "info" },
+    message: { type: String, required: true },
+    isRead: { type: Boolean, default: false },
+    metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
+  },
+  { _id: true, timestamps: true }
+);
 
 const userSchema = new mongoose.Schema(
   {
@@ -59,6 +96,9 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
     favorites: [favoriteSchema],
+    savedFilters: [savedFilterSchema],
+    wardrobeItems: [wardrobeItemSchema],
+    notifications: [notificationSchema],
   },
   {
     timestamps: true,

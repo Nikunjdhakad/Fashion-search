@@ -91,6 +91,7 @@ export function AppProvider({ children }) {
 
   // Favorites state
   const [favorites, setFavorites] = useState([]);
+  const [savedFilters, setSavedFilters] = useState([]);
 
   const fetchFavorites = async () => {
     if (!user?.token) return;
@@ -104,6 +105,21 @@ export function AppProvider({ children }) {
       }
     } catch (err) {
       console.error("Failed to fetch favorites:", err);
+    }
+  };
+
+  const fetchSavedFilters = async () => {
+    if (!user?.token) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/users/saved-filters`, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSavedFilters(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch saved filters:", err);
     }
   };
 
@@ -149,12 +165,79 @@ export function AppProvider({ children }) {
     }
   };
 
+  const updateFavorite = async (id, updates) => {
+    if (!user?.token) return false;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/favorites/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify(updates),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setFavorites(data);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error("Failed to update favorite:", err);
+      return false;
+    }
+  };
+
+  const saveFilterPreset = async ({ name, filters }) => {
+    if (!user?.token) return false;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/users/saved-filters`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({ name, filters }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSavedFilters(data);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error("Failed to save filter preset:", err);
+      return false;
+    }
+  };
+
+  const deleteFilterPreset = async (id) => {
+    if (!user?.token) return false;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/users/saved-filters/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSavedFilters(data);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error("Failed to delete filter preset:", err);
+      return false;
+    }
+  };
+
   // Load favorites when user changes
   useEffect(() => {
     if (user?.token) {
       fetchFavorites();
+      fetchSavedFilters();
     } else {
       setFavorites([]);
+      setSavedFilters([]);
     }
   }, [user?.token]);
 
@@ -172,8 +255,13 @@ export function AppProvider({ children }) {
         isLoadingProfile,
         favorites,
         addFavorite,
+        updateFavorite,
         removeFavorite,
         fetchFavorites,
+        savedFilters,
+        fetchSavedFilters,
+        saveFilterPreset,
+        deleteFilterPreset,
       }}
     >
       {children}
