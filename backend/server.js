@@ -15,10 +15,10 @@ connectDB();
 
 const app = express();
 
-// Rate limiting — 100 requests per 15 minutes per IP
+// Rate limiting — 300 requests per 15 minutes per IP
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 300,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many requests, please try again later." },

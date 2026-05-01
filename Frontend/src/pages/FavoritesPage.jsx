@@ -155,7 +155,8 @@ export default function FavoritesPage() {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center justify-between"
+          >
+            <div className="flex items-center justify-between"
           >
             <div>
               <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
@@ -167,21 +168,24 @@ export default function FavoritesPage() {
               </h1>
               <p className="text-sm text-muted-foreground mt-0.5">Your saved fashion finds</p>
             </div>
-            <Link to="/upload">
-              <Button variant="outline" size="sm" className="rounded-xl gap-2 h-10 px-5 border-border/40 hover:bg-primary/5 hover:border-primary/30 transition-all">
-                <Search className="h-4 w-4" />
-                Find More
+            <div className="flex items-center gap-2">
+              <Link to="/upload">
+                <Button variant="outline" size="sm" className="rounded-xl gap-2 h-10 px-5 border-border/40 hover:bg-primary/5 hover:border-primary/30 transition-all">
+                  <Search className="h-4 w-4" />
+                  Find More
+                </Button>
+              </Link>
+              <Button variant="outline" size="sm" className="rounded-xl h-10" onClick={runPriceCheck}>
+                {isCheckingPrices ? "Checking..." : "Run Price Alert Check"}
               </Button>
-            </Link>
-            <Button variant="outline" size="sm" className="rounded-xl h-10" onClick={runPriceCheck}>
-              {isCheckingPrices ? "Checking..." : "Run Price Alert Check"}
-            </Button>
-          </motion.div>
+            </div>
+          </div>
           {priceCheckMessage ? (
             <div className="mt-3 rounded-lg border border-border/40 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
               {priceCheckMessage}
             </div>
           ) : null}
+          </motion.div>
         </div>
       </div>
 

@@ -453,8 +453,7 @@ const getAuditLogs = async (req, res) => {
       }
     }
 
-    const logs = await AuditLog.find()
-      .find(query)
+    const logs = await AuditLog.find(query)
       .sort({ createdAt: -1 })
       .limit(limit)
       .populate("adminId", "username name")

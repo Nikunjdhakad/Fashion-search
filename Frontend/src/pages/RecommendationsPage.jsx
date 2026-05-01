@@ -38,7 +38,13 @@ export default function RecommendationsPage() {
     const price = parsePrice(o.price);
     const score = o.matchScore || 0;
     const tagPass = !filters.tag || (o.tags || []).some((t) => String(t).toLowerCase().includes(filters.tag.toLowerCase()));
-    return price >= filters.minPrice && price <= filters.maxPrice && score >= filters.minMatchScore && tagPass;
+    
+    // Allow Infinity (missing price) to show up unless user specifically lowered the maxPrice filter
+    const pricePass = price === Infinity 
+      ? filters.maxPrice >= 100000 
+      : (price >= filters.minPrice && price <= filters.maxPrice);
+      
+    return pricePass && score >= filters.minMatchScore && tagPass;
   });
 
   const sortedOutfits = [...filteredOutfits].sort((a, b) => {
