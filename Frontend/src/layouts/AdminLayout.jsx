@@ -160,7 +160,7 @@ export default function AdminLayout() {
           <div className="flex items-center gap-3">
             <Shield className="h-4 w-4 text-amber-500" />
             <span className="text-sm font-semibold text-muted-foreground">
-              Deep Fashion Admin
+              DesiFit Admin
             </span>
           </div>
           <div className="flex items-center gap-3">

@@ -38,7 +38,7 @@ export default function AppLayout() {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 group" onClick={closeMobile}>
             <Logo className="h-8 w-8 group-hover:scale-105 transition-transform" />
-            <span className="font-bold text-xl tracking-tight">Deep Fashion</span>
+            <span className="font-bold text-xl tracking-tight">DesiFit</span>
           </Link>
 
           <div className="flex items-center gap-6">
@@ -235,7 +235,7 @@ export default function AppLayout() {
             <div className="col-span-2 md:col-span-1">
               <Link to="/" className="flex items-center gap-2 mb-3">
                 <Logo className="h-7 w-7" />
-                <span className="font-bold text-lg tracking-tight">Deep Fashion</span>
+                <span className="font-bold text-lg tracking-tight">DesiFit</span>
               </Link>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 AI-powered fashion search engine. Find any clothing from a photo.
@@ -274,7 +274,7 @@ export default function AppLayout() {
 
           {/* Bottom bar */}
           <div className="pt-6 border-t border-border/30 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground/60">
-            <p>© {new Date().getFullYear()} Deep Fashion. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} DesiFit. All rights reserved.</p>
             <div className="flex gap-4">
               <a href="#" className="hover:text-foreground transition-colors">Privacy Policy</a>
               <a href="#" className="hover:text-foreground transition-colors">Terms of Service</a>

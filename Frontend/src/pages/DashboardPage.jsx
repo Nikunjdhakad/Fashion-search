@@ -149,7 +149,7 @@ export default function DashboardPage() {
               <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
                 <div className="flex-1 space-y-4">
                   <div>
-                    <h2 className="text-xl font-bold tracking-tight mb-1">Welcome to Deep Fashion! 🎉</h2>
+                    <h2 className="text-xl font-bold tracking-tight mb-1">Welcome to DesiFit! 🎉</h2>
                     <p className="text-muted-foreground text-sm">
                       Get started in 3 simple steps — it only takes seconds to find your perfect match.
                     </p>

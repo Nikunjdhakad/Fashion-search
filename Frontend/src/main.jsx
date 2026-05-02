@@ -7,7 +7,7 @@ import { AppProvider } from "./context/AppContext.jsx";
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <ThemeProvider defaultTheme="dark" storageKey="Deep fashion-ui-theme">
+    <ThemeProvider defaultTheme="dark" storageKey="desifit-ui-theme">
       <AppProvider>
         <App />
       </AppProvider>

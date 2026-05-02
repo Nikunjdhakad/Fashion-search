@@ -23,7 +23,7 @@ const ThemeProviderContext = createContext(initialState);
 export function ThemeProvider({
   children,
   defaultTheme = "dark",
-  storageKey = "Deep fashion-ui-theme",
+  storageKey = "desifit-ui-theme",
   ...props
 }) {
   const [theme, setTheme] = useState(

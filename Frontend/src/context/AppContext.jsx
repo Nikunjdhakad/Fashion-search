@@ -64,13 +64,13 @@ export function AppProvider({ children }) {
 
   // Uploads — loaded from localStorage, no mock fallback
   const [uploads, setUploads] = useState(() => {
-    const saved = localStorage.getItem("Deep fashion-uploads");
+    const saved = localStorage.getItem("desifit-uploads");
     if (saved) return JSON.parse(saved);
     return [];
   });
 
   const [latestUpload, setLatestUpload] = useState(() => {
-    const saved = localStorage.getItem("Deep fashion-uploads");
+    const saved = localStorage.getItem("desifit-uploads");
     if (saved) {
       const parsed = JSON.parse(saved);
       if (parsed.length > 0) return parsed[0];
@@ -79,7 +79,7 @@ export function AppProvider({ children }) {
   });
 
   useEffect(() => {
-    localStorage.setItem("Deep fashion-uploads", JSON.stringify(uploads));
+    localStorage.setItem("desifit-uploads", JSON.stringify(uploads));
   }, [uploads]);
 
   const addUpload = (upload) => {

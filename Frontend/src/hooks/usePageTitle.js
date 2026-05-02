@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 
-const BASE_TITLE = "Deep Fashion";
+const BASE_TITLE = "DesiFit";
 
 export default function usePageTitle(title) {
   useEffect(() => {
