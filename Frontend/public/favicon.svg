@@ -1,44 +1,28 @@
-<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bgGrad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#312e81"/>
-      <stop offset="100%" stop-color="#1e1b4b"/>
+    <linearGradient id="g1" x1="2" y1="2" x2="62" y2="62" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#e879f9"/>
+      <stop offset="45%"  stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#6366f1"/>
     </linearGradient>
-    <linearGradient id="letterGrad" x1="80" y1="96" x2="432" y2="416" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#c4b5fd"/>
-      <stop offset="40%" stop-color="#a78bfa"/>
-      <stop offset="100%" stop-color="#818cf8"/>
-    </linearGradient>
-    <linearGradient id="accentGrad" x1="380" y1="56" x2="440" y2="140" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#f0abfc"/>
-      <stop offset="100%" stop-color="#e879f9"/>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#fde68a"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
     </linearGradient>
   </defs>
 
-  <!-- Background -->
-  <rect width="512" height="512" rx="128" fill="url(#bgGrad)"/>
+  <!-- D letter -->
+  <line x1="11" y1="10" x2="11" y2="54" stroke="url(#g1)" stroke-width="3.8" stroke-linecap="round"/>
+  <line x1="11" y1="10" x2="23" y2="10" stroke="url(#g1)" stroke-width="3.8" stroke-linecap="round"/>
+  <line x1="11" y1="54" x2="23" y2="54" stroke="url(#g1)" stroke-width="3.8" stroke-linecap="round"/>
+  <path d="M 23 10 C 43 10 50 20 50 32 C 50 44 43 54 23 54" stroke="url(#g1)" stroke-width="3.8" stroke-linecap="round" fill="none"/>
 
-  <!-- Subtle inner border -->
-  <rect x="16" y="16" width="480" height="480" rx="112" fill="none" stroke="white" stroke-opacity="0.06" stroke-width="4"/>
+  <!-- F letter -->
+  <line x1="34" y1="10" x2="34" y2="54" stroke="url(#g1)" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="34" y1="10" x2="57" y2="10" stroke="url(#g1)" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="34" y1="31" x2="51" y2="31" stroke="url(#g1)" stroke-width="3.5" stroke-linecap="round"/>
 
-  <!-- "D" letter -->
-  <path
-    d="M112 112 L112 400 L192 400 C304 400 352 336 352 256 C352 176 304 112 192 112 Z"
-    fill="none"
-    stroke="url(#letterGrad)"
-    stroke-width="28"
-    stroke-linejoin="round"
-    stroke-linecap="round"
-  />
-
-  <!-- "F" letter — vertical stem -->
-  <line x1="272" y1="112" x2="272" y2="400" stroke="url(#letterGrad)" stroke-width="28" stroke-linecap="round"/>
-  <!-- "F" — top bar -->
-  <line x1="272" y1="112" x2="416" y2="112" stroke="url(#letterGrad)" stroke-width="28" stroke-linecap="round"/>
-  <!-- "F" — middle bar -->
-  <line x1="272" y1="256" x2="384" y2="256" stroke="url(#letterGrad)" stroke-width="28" stroke-linecap="round"/>
-
-  <!-- Diamond sparkle accent -->
-  <path d="M424 64 L440 96 L424 128 L408 96 Z" fill="url(#accentGrad)"/>
-  <circle cx="424" cy="96" r="12" fill="white" opacity="0.9"/>
+  <!-- Gold accent diamond -->
+  <path d="M 58 3 L 62 9 L 58 15 L 54 9 Z" fill="url(#gold)"/>
+  <circle cx="58" cy="9" r="2" fill="white" opacity="0.85"/>
 </svg>
